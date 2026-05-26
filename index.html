@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>Charades Night</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#0f0f0f;
+  color:white;
+  text-align:center;
+  padding:18px;
+}
+.container{max-width:460px;margin:auto}
+.card{
+  background:#202020;
+  padding:18px;
+  border-radius:22px;
+  margin:14px auto;
+  box-shadow:0 8px 25px rgba(0,0,0,.25);
+}
+h1{margin:8px 0 4px;font-size:30px}
+p{color:#bbb}
+input,select{
+  width:100%;
+  padding:15px;
+  border-radius:14px;
+  border:none;
+  font-size:18px;
+  text-align:center;
+  margin:10px 0;
+}
+button{
+  padding:14px 18px;
+  margin:6px;
+  border:none;
+  border-radius:14px;
+  font-size:16px;
+  font-weight:bold;
+}
+.primary{background:#3b82f6;color:white}
+.green{background:#22c55e;color:white}
+.red{background:#ef4444;color:white}
+.gray{background:#555;color:white}
+.yellow{background:#facc15;color:#111}
+.purple{background:#a855f7;color:white}
+.score-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(95px,1fr));
+  gap:10px;
+}
+.score-box{
+  background:#303030;
+  border-radius:14px;
+  padding:12px;
+}
+.active{background:white;color:#111}
+#timer{font-size:50px;margin:8px}
+#promptBox{
+  min-height:120px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:white;
+  color:#111;
+  padding:18px;
+  border-radius:50%;
+  width:260px;
+  height:260px;
+  margin:14px auto;
+  font-size:24px;
+  font-weight:bold;
+  cursor:pointer;
+  border:8px solid #facc15;
+  user-select:none;
+  transition:transform .15s ease;
+}
+#promptBox.spinning{
+  animation:pulseSpin .45s linear infinite;
+}
+@keyframes pulseSpin{
+  0%{transform:rotate(0deg) scale(1)}
+  50%{transform:rotate(4deg) scale(1.04)}
+  100%{transform:rotate(0deg) scale(1)}
+}
+#categoryLabel{
+  font-size:15px;
+  color:#555;
+  margin-bottom:8px;
+}
+#prompt{
+  line-height:1.2;
+}
+.small{font-size:13px;color:#aaa}
+.hidden{display:none}
+.categoryButtons{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+}
+.categoryButtons button{
+  margin:0;
+  padding:12px 5px;
+  font-size:13px;
+}
+.selectedCat{
+  outline:3px solid white;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🎭 Charades Night</h1>
+<p>Flexible players • Auto teams • Prompt roulette</p>
+
+<div id="setupScreen" class="card">
+  <h2>Enter Number of Players</h2>
+  <p class="small">Recommended: 4 to 20 players</p>
+  <input id="playerInput" type="number" min="2" max="30" placeholder="Example: 9">
+  <button class="primary" onclick="setupGame()">Create Game</button>
+</div>
+
+<div id="gameScreen" class="hidden">
+
+  <div class="card">
+    <p class="small" id="gameInfo"></p>
+    <h2 id="roundTitle">Round 1</h2>
+    <h2 id="team">Team 1</h2>
+    <div id="timer">45</div>
+
+    <div class="categoryButtons">
+      <button id="catMovies" class="purple selectedCat" onclick="setCategory('Movies')">Movies</button>
+      <button id="catAction" class="purple" onclick="setCategory('Action')">Action</button>
+      <button id="catProfession" class="purple" onclick="setCategory('Profession')">Profession</button>
+    </div>
+
+    <div id="promptBox" onclick="togglePromptSpin()">
+      <div id="categoryLabel">Movies</div>
+      <div id="prompt">Tap Start Prompt</div>
+    </div>
+
+    <p class="small">Tap the circle to stop/start the moving prompt.</p>
+    <p class="small" id="pointsInfo"></p>
+  </div>
+
+  <div class="card">
+    <h3>Scores</h3>
+    <div id="scoreBoard" class="score-grid"></div>
+  </div>
+
+  <button class="primary" onclick="startTimer()">Start Timer</button>
+  <button class="gray" onclick="pauseTimer()">Pause Timer</button><br>
+
+  <button class="yellow" onclick="startPromptSpin()">Start Prompt</button>
+  <button class="gray" onclick="stopPromptSpin()">Stop Prompt</button><br>
+
+  <button class="green" onclick="correct()">Correct</button>
+  <button class="red" onclick="skip()">Skip</button><br>
+
+  <button class="gray" onclick="resetGame()">Reset Game</button>
+
+  <div class="card">
+    <h3>Game Rules</h3>
+    <p class="small">
+      Choose Movies, Action, or Profession. Tap the circle to stop the prompt roulette.
+      No talking, no spelling letters, no pointing at objects. Drama is mandatory.
+    </p>
+  </div>
+
+</div>
+</div>
+
+<script>
+let promptData = {
+  Movies: [
+    "Iron Man","Spider-Man","Avengers: Endgame","Avengers: Infinity War","Black Panther",
+    "Doctor Strange","Thor: Ragnarok","Captain America","Guardians of the Galaxy",
+    "Ant-Man","Captain Marvel","The Marvels","Deadpool","Wolverine","X-Men",
+    "The Batman","Batman Begins","The Dark Knight","Wonder Woman","Aquaman",
+    "Superman","Man of Steel","Justice League","The Flash","Shazam",
+    "Star Wars","Star Trek","Avatar","Dune","Interstellar","Inception",
+    "The Matrix","Jurassic Park","Pacific Rim","Transformers","Godzilla",
+    "Men in Black","E.T.","Alien","Predator","The Terminator"
+  ],
+  Action: [
+    "Cooking","Eating","Dancing","Singing","Taking selfie","Cleaning","Cycling",
+    "Exercising","Swimming","Running","Jumping","Sleeping","Brushing teeth",
+    "Driving","Shopping","Texting","Typing","Laughing","Crying","Sneezing",
+    "Playing guitar","Playing basketball","Playing football","Yoga","Weightlifting",
+    "Washing dishes","Mopping floor","Walking a dog","Flying a kite","Reading",
+    "Writing","Painting","Acting angry","Acting scared","Riding a roller coaster",
+    "Opening a stuck jar","Using a laptop","Charging a phone","Taking an exam"
+  ],
+  Profession: [
+    "Engineer","Data Scientist","Machine Learning Engineer","AI Research Scientist",
+    "AI Engineer","Doctor","Dentist","Teacher","Professor","Actor","Model",
+    "Sportsman","Business Tycoon","Astronaut","Pilot","Chef","Police Officer",
+    "Firefighter","Lawyer","Judge","Scientist","Researcher","Software Developer",
+    "Civil Engineer","Electrical Engineer","Mechanical Engineer","Nurse","Pharmacist",
+    "Architect","Journalist","Photographer","Singer","Dancer","Farmer","Mechanic",
+    "Fashion Designer","Entrepreneur","CEO","Robotics Engineer","Space Scientist"
+  ]
+};
+
+let teams = [];
+let scores = [];
+let teamIndex = 0;
+let time = 45;
+let timerInterval = null;
+let promptInterval = null;
+let round = 1;
+let turnsPlayed = 0;
+let totalPlayers = 0;
+let playersPerTeamText = "";
+let selectedCategory = "Movies";
+let isPromptSpinning = false;
+
+function setupGame(){
+  totalPlayers = parseInt(document.getElementById("playerInput").value);
+
+  if(!totalPlayers || totalPlayers < 2){
+    alert("Enter at least 2 players. One-person Charades is just mime therapy.");
+    return;
+  }
+
+  let teamCount;
+  if(totalPlayers <= 5){ teamCount = 2; }
+  else if(totalPlayers <= 11){ teamCount = 3; }
+  else if(totalPlayers <= 16){ teamCount = 4; }
+  else { teamCount = 5; }
+
+  teams = [];
+  scores = [];
+
+  for(let i=1;i<=teamCount;i++){
+    teams.push("Team " + i);
+    scores.push(0);
+  }
+
+  let base = Math.floor(totalPlayers / teamCount);
+  let extra = totalPlayers % teamCount;
+  let distribution = [];
+
+  for(let i=0;i<teamCount;i++){
+    distribution.push(base + (i < extra ? 1 : 0));
+  }
+
+  playersPerTeamText = distribution.map((n,i)=>"Team " + (i+1) + ": " + n).join(" • ");
+
+  document.getElementById("setupScreen").classList.add("hidden");
+  document.getElementById("gameScreen").classList.remove("hidden");
+
+  teamIndex = 0;
+  round = 1;
+  turnsPlayed = 0;
+  time = 45;
+  selectedCategory = "Movies";
+
+  updateGameInfo();
+  updateScores();
+  updateCategoryButtons();
+  setPrompt("Tap Start Prompt");
+}
+
+function setCategory(category){
+  selectedCategory = category;
+  updateCategoryButtons();
+  setPrompt("Tap Start Prompt");
+  stopPromptSpin();
+}
+
+function updateCategoryButtons(){
+  ["Movies","Action","Profession"].forEach(cat=>{
+    let id = "cat" + cat;
+    document.getElementById(id).classList.remove("selectedCat");
+  });
+  document.getElementById("cat" + selectedCategory).classList.add("selectedCat");
+  document.getElementById("categoryLabel").innerText = selectedCategory;
+}
+
+function randomPrompt(){
+  let list = promptData[selectedCategory];
+  return list[Math.floor(Math.random()*list.length)];
+}
+
+function setPrompt(text){
+  document.getElementById("prompt").innerText = text;
+  document.getElementById("categoryLabel").innerText = selectedCategory;
+}
+
+function startPromptSpin(){
+  stopPromptSpin();
+  isPromptSpinning = true;
+  document.getElementById("promptBox").classList.add("spinning");
+  promptInterval = setInterval(()=>{
+    setPrompt(randomPrompt());
+  },90);
+}
+
+function stopPromptSpin(){
+  clearInterval(promptInterval);
+  promptInterval = null;
+  isPromptSpinning = false;
+  document.getElementById("promptBox").classList.remove("spinning");
+}
+
+function togglePromptSpin(){
+  if(isPromptSpinning){
+    stopPromptSpin();
+  } else {
+    startPromptSpin();
+  }
+}
+
+function updateGameInfo(){
+  document.getElementById("gameInfo").innerText =
+    totalPlayers + " players • " + teams.length + " teams • " + playersPerTeamText;
+
+  document.getElementById("team").innerText = teams[teamIndex];
+  document.getElementById("roundTitle").innerText = "Round " + round;
+  document.getElementById("pointsInfo").innerText = "Correct answer = " + round + " point(s)";
+}
+
+function updateScores(){
+  let board = document.getElementById("scoreBoard");
+  board.innerHTML = "";
+
+  teams.forEach((team,i)=>{
+    let box = document.createElement("div");
+    box.className = "score-box" + (i === teamIndex ? " active" : "");
+    box.innerHTML = "<strong>" + team + "</strong><br><span style='font-size:28px'>" + scores[i] + "</span>";
+    board.appendChild(box);
+  });
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    time--;
+    document.getElementById("timer").innerText = time;
+    if(time <= 0){
+      clearInterval(timerInterval);
+      alert("Time up!");
+    }
+  },1000);
+}
+
+function pauseTimer(){
+  clearInterval(timerInterval);
+}
+
+function resetTimer(){
+  clearInterval(timerInterval);
+  time = round === 4 ? 60 : 45;
+  document.getElementById("timer").innerText = time;
+}
+
+function correct(){
+  scores[teamIndex] += round;
+  updateScores();
+  nextTurn();
+}
+
+function skip(){
+  nextTurn();
+}
+
+function nextTurn(){
+  stopPromptSpin();
+  turnsPlayed++;
+  teamIndex = (teamIndex + 1) % teams.length;
+
+  if(turnsPlayed > 0 && turnsPlayed % (teams.length * 3) === 0 && round < 4){
+    round++;
+  }
+
+  updateGameInfo();
+  updateScores();
+  resetTimer();
+  setPrompt("Tap Start Prompt");
+}
+
+function resetGame(){
+  clearInterval(timerInterval);
+  stopPromptSpin();
+  document.getElementById("setupScreen").classList.remove("hidden");
+  document.getElementById("gameScreen").classList.add("hidden");
+  document.getElementById("playerInput").value = "";
+}
+</script>
+
+</body>
+</html>
