@@ -132,7 +132,7 @@ button{
     <p class="small" id="gameInfo"></p>
     <h2 id="roundTitle">Round 1</h2>
     <h2 id="team">Team 1</h2>
-    <div id="timer">45</div>
+    <div id="timer">60</div>
 
     <div class="categoryButtons">
       <button id="catMovies" class="purple selectedCat" onclick="setCategory('Movies')">Movies</button>
@@ -211,7 +211,7 @@ let promptData = {
 let teams = [];
 let scores = [];
 let teamIndex = 0;
-let time = 45;
+let time = 60;
 let timerInterval = null;
 let promptInterval = null;
 let round = 1;
@@ -259,7 +259,7 @@ function setupGame(){
   teamIndex = 0;
   round = 1;
   turnsPlayed = 0;
-  time = 45;
+  time = 60;
   selectedCategory = "Movies";
 
   updateGameInfo();
@@ -357,7 +357,7 @@ function pauseTimer(){
 
 function resetTimer(){
   clearInterval(timerInterval);
-  time = round === 4 ? 60 : 45;
+  time = 60;
   document.getElementById("timer").innerText = time;
 }
 
